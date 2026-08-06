@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/broadsheet-2fcd314e-f52d-412e-8fc0-da0456482ad1/styles.css">
+  <script src="_ds/broadsheet-2fcd314e-f52d-412e-8fc0-da0456482ad1/_ds_bundle.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
+  <style>
+    @keyframes microPop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+    @keyframes microFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes microSpin { to{transform:rotate(360deg)} }
+    @keyframes microStar { 0%{transform:scale(0) rotate(-40deg);opacity:0} 70%{transform:scale(1.25) rotate(6deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
+    @keyframes microGlow { 0%,100%{filter:drop-shadow(0 0 0 rgba(214,0,108,0))} 50%{filter:drop-shadow(0 0 10px rgba(214,0,108,.55))} }
+    .mp-tile:hover{ filter:brightness(1.08); }
+    .mp-tile:active{ filter:brightness(.94); }
+    .mp-tile:focus-visible{ outline:3px solid var(--color-text); outline-offset:3px; }
+  </style>
+</helmet>
+<div style="min-height:100vh; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:clamp(16px,3vw,40px);">
+  <div style="max-width:1080px; margin:0 auto;">
+
+    <header style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px 24px; margin-bottom:clamp(18px,3vw,32px);">
+      <div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <i class="ph-duotone ph-microscope" style="font-size:clamp(40px,6vw,60px); color:var(--color-accent); animation:microFloat 3.4s ease-in-out infinite;"></i>
+          <h1 style="font-family:var(--font-heading); font-weight:700; font-size:clamp(30px,5.4vw,54px); line-height:1.02; margin:0; letter-spacing:-.01em;">顯微鏡操作推盤</h1>
+        </div>
+        <p style="margin:8px 0 0; font-size:clamp(15px,1.8vw,19px); color:var(--color-neutral-700); max-width:52ch;">把打散的操作步驟推回正確順序 —— 從取鏡對光到觀察記錄，越快越少步，分數越高。</p>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:10px;">
+        <button type="button" onClick="{{ toggleMute }}" title="音效開關" style="width:52px; height:52px; border-radius:12px; border:2px solid var(--color-neutral-300); background:var(--color-neutral-100); color:var(--color-text); font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s,border-color .12s;">
+          <i class="{{ muteIcon }}"></i>
+        </button>
+      </div>
+    </header>
+
+    <div style="display:grid; grid-template-columns:minmax(280px,1fr) minmax(260px,340px); gap:clamp(20px,3vw,40px); align-items:start;">
+
+      <!-- BOARD COLUMN -->
+      <section>
+        <div style="position:relative; width:100%; max-width:540px; margin:0 auto; aspect-ratio:1/1; background:var(--color-neutral-100); border-radius:20px; padding:3.2%; box-shadow:var(--shadow-lg); overflow:hidden;">
+          <!-- empty slots -->
+          <sc-for list="{{ slots }}" as="s" hint-placeholder-count="9">
+            <div style="position:absolute; left:{{ s.left }}; top:{{ s.top }}; width:31.06%; height:31.06%; border-radius:14px; border:2px dashed var(--color-neutral-300); background:var(--color-neutral-200);"></div>
+          </sc-for>
+          <!-- tiles -->
+          <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+            <button type="button" class="mp-tile" onClick="{{ t.onClick }}" style="position:absolute; left:{{ t.left }}; top:{{ t.top }}; width:31.06%; height:31.06%; border:none; border-radius:14px; background:{{ t.bg }}; color:#fff; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:5% 4%; box-shadow:0 4px 12px rgba(32,30,29,.18); transition:left .17s cubic-bezier(.34,1.2,.5,1), top .17s cubic-bezier(.34,1.2,.5,1), filter .12s; box-sizing:border-box;">
+              <span style="position:absolute; top:6px; left:9px; font-family:var(--font-heading); font-weight:700; font-size:clamp(15px,2.4vw,22px); opacity:.82;">{{ t.num }}</span>
+              <i class="{{ t.icon }}" style="font-size:clamp(30px,6vw,52px); line-height:1;"></i>
+              <span style="font-family:var(--font-heading); font-weight:600; font-size:clamp(13px,2vw,18px); line-height:1.12; text-align:center; text-wrap:balance;">{{ t.label }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ solvedFlash }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;">
+              <i class="ph-duotone ph-check-circle" style="font-size:44%; color:#fff; animation:microStar .5s ease both; filter:drop-shadow(0 6px 20px rgba(32,30,29,.4));"></i>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; justify-content:center;">
+          <button type="button" onClick="{{ onUndo }}" disabled="{{ undoDisabled }}" style="flex:1 1 auto; min-width:130px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 18px; border-radius:12px; border:2px solid var(--color-accent); background:var(--color-accent-100); color:var(--color-accent-800); font-family:var(--font-heading); font-weight:600; font-size:17px; cursor:pointer; transition:background .12s,opacity .12s;">
+            <i class="ph-duotone ph-arrow-counter-clockwise" style="font-size:22px;"></i> 復原
+          </button>
+          <button type="button" onClick="{{ onNewGame }}" style="flex:1 1 auto; min-width:130px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 18px; border-radius:12px; border:none; background:var(--color-accent); color:#fff; font-family:var(--font-heading); font-weight:600; font-size:17px; cursor:pointer; transition:background .12s;">
+            <i class="ph-duotone ph-shuffle" style="font-size:22px;"></i> 重新開始
+          </button>
+        </div>
+      </section>
+
+      <!-- SIDE COLUMN -->
+      <aside style="display:flex; flex-direction:column; gap:18px;">
+
+        <!-- score row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div style="background:var(--color-neutral-100); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow-sm);">
+            <div style="display:flex; align-items:center; gap:6px; color:var(--color-neutral-600); font-size:14px;"><i class="ph-duotone ph-clock" style="font-size:18px;"></i> 用時</div>
+            <div style="font-family:var(--font-heading); font-weight:700; font-size:30px; line-height:1.1; margin-top:2px;">{{ timeText }}</div>
+          </div>
+          <div style="background:var(--color-neutral-100); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow-sm);">
+            <div style="display:flex; align-items:center; gap:6px; color:var(--color-neutral-600); font-size:14px;"><i class="ph-duotone ph-shoe-prints" style="font-size:18px;"></i> 步數</div>
+            <div style="font-family:var(--font-heading); font-weight:700; font-size:30px; line-height:1.1; margin-top:2px;">{{ moves }}</div>
+          </div>
+        </div>
+
+        <!-- target reference -->
+        <div style="background:var(--color-neutral-100); border-radius:14px; padding:16px; box-shadow:var(--shadow-sm);">
+          <div style="display:flex; align-items:center; gap:7px; font-family:var(--font-heading); font-weight:600; font-size:16px; margin-bottom:12px;"><i class="ph-duotone ph-target" style="font-size:20px; color:var(--color-accent-2);"></i> 目標排列</div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:5px;">
+            <sc-for list="{{ targetCells }}" as="c" hint-placeholder-count="9">
+              <div style="aspect-ratio:1/1; border-radius:7px; background:{{ c.bg }}; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;">
+                <i class="{{ c.icon }}" style="font-size:clamp(15px,3.4vw,22px);"></i>
+                <span style="font-family:var(--font-heading); font-weight:700; font-size:11px;">{{ c.num }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <p style="margin:10px 0 0; font-size:13px; color:var(--color-neutral-600); line-height:1.4;">左上到右下，1→8 依正確操作順序排列，右下角留空。</p>
+        </div>
+
+        <!-- leaderboard -->
+        <div style="background:var(--color-neutral-100); border-radius:14px; padding:16px; box-shadow:var(--shadow-sm);">
+          <div style="display:flex; align-items:center; gap:7px; font-family:var(--font-heading); font-weight:600; font-size:16px; margin-bottom:10px;"><i class="ph-duotone ph-trophy" style="font-size:20px; color:var(--color-accent);"></i> 排行榜</div>
+          <sc-if value="{{ hasScores }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ leaderboard }}" as="r" hint-placeholder-count="3">
+                <div style="display:grid; grid-template-columns:26px 1fr auto; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid var(--color-neutral-200);">
+                  <span style="font-family:var(--font-heading); font-weight:700; font-size:16px; color:{{ r.rankColor }};">{{ r.rank }}</span>
+                  <div style="min-width:0;">
+                    <div style="font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</div>
+                    <div style="font-size:12px; color:var(--color-neutral-600);">{{ r.detail }}</div>
+                  </div>
+                  <span style="font-family:var(--font-heading); font-weight:700; font-size:17px; color:var(--color-accent-700);">{{ r.score }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noScores }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:6px 0; font-size:14px; color:var(--color-neutral-600); line-height:1.5;">還沒有紀錄。完成一局把你的名字留在這裡吧！</p>
+          </sc-if>
+        </div>
+      </aside>
+    </div>
+
+    <!-- WIN DIALOG -->
+    <sc-if value="{{ showWin }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed; inset:0; background:rgba(32,30,29,.55); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:18px; z-index:50;">
+        <div style="width:min(560px,96vw); max-height:92vh; overflow:auto; background:var(--color-bg); border-radius:20px; padding:clamp(22px,4vw,38px); box-shadow:var(--shadow-lg); animation:microPop .4s ease both;">
+          <div style="text-align:center;">
+            <div style="display:flex; justify-content:center; gap:8px; margin-bottom:8px;">
+              <sc-for list="{{ starCells }}" as="st" hint-placeholder-count="3">
+                <i class="{{ st.icon }}" style="font-size:46px; color:{{ st.color }}; animation:microStar .5s ease both; animation-delay:{{ st.delay }};"></i>
+              </sc-for>
+            </div>
+            <h2 style="font-family:var(--font-heading); font-weight:700; font-size:clamp(26px,5vw,38px); margin:4px 0 2px;">完成！{{ starWord }}</h2>
+            <p style="margin:0; color:var(--color-neutral-700); font-size:16px;">用時 {{ timeText }}　·　{{ moves }} 步</p>
+            <div style="font-family:var(--font-heading); font-weight:700; font-size:clamp(44px,9vw,64px); color:var(--color-accent-2); line-height:1; margin:12px 0 4px;">{{ finalScore }}<span style="font-size:20px; color:var(--color-neutral-600); font-weight:600;"> 分</span></div>
+          </div>
+
+          <div style="margin-top:18px; background:var(--color-neutral-100); border-radius:14px; padding:16px 18px;">
+            <div style="display:flex; align-items:center; gap:7px; font-family:var(--font-heading); font-weight:600; font-size:16px; margin-bottom:10px;"><i class="ph-duotone ph-list-checks" style="font-size:20px; color:var(--color-accent);"></i> 顯微鏡正確操作順序</div>
+            <ol style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; counter-reset:step;">
+              <sc-for list="{{ stepList }}" as="p" hint-placeholder-count="8">
+                <li style="display:grid; grid-template-columns:34px 1fr; gap:11px; align-items:start;">
+                  <span style="width:34px; height:34px; border-radius:9px; background:{{ p.bg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--font-heading); font-weight:700; font-size:17px;">{{ p.num }}</span>
+                  <div>
+                    <div style="font-family:var(--font-heading); font-weight:600; font-size:16px;">{{ p.label }}</div>
+                    <div style="font-size:14px; color:var(--color-neutral-700); line-height:1.45;">{{ p.desc }}</div>
+                  </div>
+                </li>
+              </sc-for>
+            </ol>
+          </div>
+
+          <sc-if value="{{ canSaveScore }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:18px;">
+              <label style="display:block; font-family:var(--font-heading); font-weight:600; font-size:15px; margin-bottom:7px;">留下你的名字，登上排行榜</label>
+              <div style="display:flex; gap:10px;">
+                <input type="text" value="{{ nameValue }}" onInput="{{ onNameInput }}" maxlength="12" placeholder="輸入名字" style="flex:1; padding:13px 14px; border-radius:11px; border:2px solid var(--color-neutral-300); background:var(--color-neutral-100); font-family:var(--font-body); font-size:17px; color:var(--color-text);" />
+                <button type="button" onClick="{{ onSaveScore }}" style="padding:13px 20px; border-radius:11px; border:none; background:var(--color-accent); color:#fff; font-family:var(--font-heading); font-weight:600; font-size:17px; cursor:pointer;">儲存</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ scoreSaved }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:16px 0 0; text-align:center; color:var(--color-accent-700); font-family:var(--font-heading); font-weight:600; font-size:16px;"><i class="ph-duotone ph-check-circle" style="font-size:20px; vertical-align:-3px;"></i> 已存入排行榜</p>
+          </sc-if>
+
+          <button type="button" onClick="{{ onNewGame }}" style="margin-top:20px; width:100%; padding:15px; border-radius:12px; border:none; background:var(--color-accent-2); color:#fff; font-family:var(--font-heading); font-weight:700; font-size:18px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+            <i class="ph-duotone ph-shuffle" style="font-size:22px;"></i> 再玩一局
+          </button>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1080,&quot;height&quot;:760},&quot;difficulty&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;輕鬆&quot;,&quot;普通&quot;,&quot;挑戰&quot;],&quot;default&quot;:&quot;普通&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;遊戲&quot;},&quot;soundOn&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;遊戲&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.steps = [
+      { num:1, label:'取鏡安放', icon:'ph-duotone ph-microscope', bg:'#0088b0', desc:'一手握鏡臂、一手托鏡座，把顯微鏡放在桌面左前方，平穩安放。' },
+      { num:2, label:'轉光對光', icon:'ph-duotone ph-sun', bg:'#e8a400', desc:'轉動反光鏡（或開光源）並調節光圈，讓視野呈現均勻明亮的圓形光。' },
+      { num:3, label:'放置玻片', icon:'ph-duotone ph-stack', bg:'#d6006c', desc:'把玻片標本放上載物台，用壓片夾固定，使標本對準通光孔中央。' },
+      { num:4, label:'低倍粗調', icon:'ph-duotone ph-arrow-fat-down', bg:'#2e9e5b', desc:'先用低倍物鏡，從側面注視鏡頭，轉粗調節器讓鏡筒下降到接近玻片。' },
+      { num:5, label:'細調對焦', icon:'ph-duotone ph-crosshair-simple', bg:'#6a4bc0', desc:'眼睛看目鏡，反向轉粗調節器上升尋找物像，再用細調節器調到清晰。' },
+      { num:6, label:'移動標本', icon:'ph-duotone ph-arrows-out-cardinal', bg:'#e2661a', desc:'輕移玻片，把要觀察的目標移到視野正中央（影像會朝反方向移動）。' },
+      { num:7, label:'轉高倍鏡', icon:'ph-duotone ph-arrows-clockwise', bg:'#0aa7a0', desc:'轉動轉換器換上高倍物鏡，只用細調節器微調，放大觀察細節。' },
+      { num:8, label:'觀察記錄', icon:'ph-duotone ph-eye', bg:'#c8324a', desc:'仔細觀察並繪圖記錄；完成後取下玻片、鏡頭轉正、復原收回鏡箱。' },
+    ];
+    this.SOLVED = [1,2,3,4,5,6,7,8,0];
+    this.state = {
+      board: this.shuffled(),
+      moves: 0,
+      seconds: 0,
+      started: false,
+      won: false,
+      showWin: false,
+      solvedFlash: false,
+      muted: this.props.soundOn === false,
+      history: [],
+      leaderboard: [],
+      nameValue: '',
+      scoreSaved: false,
+    };
+  }
+
+  difficultyCount() {
+    const d = this.props.difficulty || '普通';
+    return d === '輕鬆' ? 24 : d === '挑戰' ? 120 : 60;
+  }
+
+  shuffled() {
+    const b = [1,2,3,4,5,6,7,8,0];
+    let blank = 8, prev = -1;
+    const n = this.difficultyCount ? this.difficultyCount() : 60;
+    for (let i=0;i<n;i++){
+      const nb = this.neighbors(blank).filter(x=>x!==prev);
+      const pick = nb[Math.floor(Math.random()*nb.length)];
+      [b[blank], b[pick]] = [b[pick], b[blank]];
+      prev = blank; blank = pick;
+    }
+    if (b.every((v,i)=>v===this.SOLVED[i])) return this.shuffled();
+    return b;
+  }
+
+  neighbors(i){
+    const r = Math.floor(i/3), c = i%3, out=[];
+    if(r>0) out.push(i-3);
+    if(r<2) out.push(i+3);
+    if(c>0) out.push(i-1);
+    if(c<2) out.push(i+1);
+    return out;
+  }
+
+  componentDidMount() {
+    try { const s = JSON.parse(localStorage.getItem('micro-puzzle-lb')||'[]'); this.setState({leaderboard:Array.isArray(s)?s:[]}); } catch(e){}
+    this.timer = setInterval(()=>{
+      if(this.state.started && !this.state.won) this.setState(s=>({seconds:s.seconds+1}));
+    },1000);
+    this.keyHandler = (e)=>{
+      const map = {ArrowUp:3, ArrowDown:-3, ArrowLeft:1, ArrowRight:-1};
+      if(!(e.key in map)) return;
+      const blank = this.state.board.indexOf(0);
+      const from = blank + map[e.key];
+      // boundary check via neighbor
+      if(this.neighbors(blank).includes(from)){ e.preventDefault(); this.doMove(from); }
+    };
+    window.addEventListener('keydown', this.keyHandler);
+  }
+  componentWillUnmount(){ clearInterval(this.timer); window.removeEventListener('keydown', this.keyHandler); }
+
+  audio(){
+    if(this.state.muted) return null;
+    try{ this.ac = this.ac || new (window.AudioContext||window.webkitAudioContext)(); if(this.ac.state==='suspended') this.ac.resume(); return this.ac; }catch(e){ return null; }
+  }
+  beep(freq, dur, type, gain){
+    const ac = this.audio(); if(!ac) return;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type||'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, ac.currentTime);
+    g.gain.linearRampToValueAtTime(gain||0.12, ac.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime+dur+0.02);
+  }
+  playSlide(){ this.beep(320+Math.random()*60, 0.11, 'triangle', 0.11); }
+  playClick(){ this.beep(660, 0.06, 'square', 0.07); }
+  playWin(){ const notes=[523,659,784,1047]; notes.forEach((f,i)=>setTimeout(()=>this.beep(f,0.28,'triangle',0.14), i*130)); }
+
+  doMove(pos){
+    if(this.state.won) return;
+    const blank = this.state.board.indexOf(0);
+    if(!this.neighbors(blank).includes(pos)) return;
+    const nb = this.state.board.slice();
+    [nb[blank], nb[pos]] = [nb[pos], nb[blank]];
+    this.playSlide();
+    this.setState(s=>({ board:nb, moves:s.moves+1, started:true, history:[...s.history, s.board] }), ()=>{
+      if(nb.every((v,i)=>v===this.SOLVED[i])) this.win();
+    });
+  }
+
+  win(){
+    this.playWin();
+    this.setState({won:true, solvedFlash:true});
+    setTimeout(()=>this.setState({solvedFlash:false}), 700);
+    setTimeout(()=>this.setState({showWin:true}), 620);
+  }
+
+  onUndo = () => {
+    if(this.state.history.length===0 || this.state.won) return;
+    this.playClick();
+    this.setState(s=>{
+      const h = s.history.slice();
+      const prev = h.pop();
+      return { board:prev, history:h, moves:Math.max(0, s.moves-1) };
+    });
+  };
+
+  onNewGame = () => {
+    this.playClick();
+    this.setState({ board:this.shuffled(), moves:0, seconds:0, started:false, won:false, showWin:false, solvedFlash:false, history:[], nameValue:'', scoreSaved:false });
+  };
+
+  toggleMute = () => {
+    const willMute = !this.state.muted;
+    if(!willMute){ this.setState({muted:false}, ()=>this.playClick()); }
+    else this.setState({muted:true});
+  };
+
+  onNameInput = (e) => this.setState({nameValue: e.target.value});
+
+  computeStars(){
+    const {moves, seconds} = this.state;
+    if(moves<=18 && seconds<=45) return 3;
+    if(moves<=35 && seconds<=90) return 2;
+    return 1;
+  }
+  computeScore(){
+    const {moves, seconds} = this.state;
+    const stars = this.computeStars();
+    const raw = 6000 - seconds*8 - moves*45 + stars*400;
+    return Math.max(500, Math.round(raw/10)*10);
+  }
+
+  onSaveScore = () => {
+    const name = (this.state.nameValue||'').trim() || '匿名';
+    const entry = { name, score:this.computeScore(), seconds:this.state.seconds, moves:this.state.moves, stars:this.computeStars(), t:Date.now() };
+    const lb = [...this.state.leaderboard, entry].sort((a,b)=>b.score-a.score).slice(0,10);
+    try{ localStorage.setItem('micro-puzzle-lb', JSON.stringify(lb)); }catch(e){}
+    this.playClick();
+    this.setState({leaderboard:lb, scoreSaved:true});
+  };
+
+  fmtTime(s){ const m=Math.floor(s/60), ss=s%60; return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss; }
+
+  renderVals(){
+    const step = 34.47; // (100-2*gap)/3 where gap≈3.29 -> tile 31.06%, gap ~3.4
+    const posStyle = (i)=>({ left:(i%3)*step+'%', top:Math.floor(i/3)*step+'%' });
+    const byNum = {}; this.steps.forEach(s=>byNum[s.num]=s);
+
+    const tiles = [];
+    this.state.board.forEach((tileId, idx)=>{
+      if(tileId===0) return;
+      const st = byNum[tileId];
+      const p = posStyle(idx);
+      tiles.push({ num:tileId, label:st.label, icon:st.icon, bg:st.bg, left:p.left, top:p.top, onClick:()=>this.doMove(idx) });
+    });
+
+    const slots = [];
+    for(let i=0;i<9;i++){ const p=posStyle(i); slots.push({left:p.left, top:p.top}); }
+
+    const targetCells = this.SOLVED.map(n=> n===0 ? {bg:'var(--color-neutral-300)', icon:'ph-duotone ph-flag-checkered', num:''} : {bg:byNum[n].bg, icon:byNum[n].icon, num:n});
+
+    const stars = this.state.won ? this.computeStars() : 0;
+    const starCells = [0,1,2].map(i=>({ icon: i<stars ? 'ph-fill ph-star' : 'ph-duotone ph-star', color: i<stars ? '#e8a400' : 'var(--color-neutral-300)', delay:(i*0.12)+'s' }));
+    const starWord = stars===3 ? '完美操作！' : stars===2 ? '做得好！' : '過關！';
+
+    const stepList = this.steps.map(s=>({num:s.num, label:s.label, desc:s.desc, bg:s.bg}));
+
+    const rankColors = ['#e8a400', '#8a9299', '#c88a52'];
+    const leaderboard = this.state.leaderboard.map((r,i)=>({
+      rank:i+1, rankColor: rankColors[i]||'var(--color-neutral-600)', name:r.name,
+      detail:'★'.repeat(r.stars)+' · '+this.fmtTime(r.seconds)+' · '+r.moves+'步', score:r.score,
+    }));
+
+    return {
+      tiles, slots, targetCells, stepList, starCells, starWord, leaderboard,
+      moves: this.state.moves,
+      timeText: this.fmtTime(this.state.seconds),
+      showWin: this.state.showWin,
+      solvedFlash: this.state.solvedFlash,
+      finalScore: this.computeScore(),
+      hasScores: leaderboard.length>0,
+      noScores: leaderboard.length===0,
+      undoDisabled: this.state.history.length===0 || this.state.won,
+      muteIcon: this.state.muted ? 'ph-duotone ph-speaker-slash' : 'ph-duotone ph-speaker-high',
+      nameValue: this.state.nameValue,
+      canSaveScore: !this.state.scoreSaved,
+      scoreSaved: this.state.scoreSaved,
+      onUndo:this.onUndo, onNewGame:this.onNewGame, toggleMute:this.toggleMute,
+      onNameInput:this.onNameInput, onSaveScore:this.onSaveScore,
+    };
+  }
+}
+</script>
+</body>
+</html>
